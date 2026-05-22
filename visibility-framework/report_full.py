@@ -246,12 +246,17 @@ def render_full_html(ctx: dict, output_path: str):
     l3a, l3b = [], []
     for pname in ["LinkedIn","G2","Capterra","YouTube","Reddit","Wikipedia"]:
         pdata = plats.get(pname,{})
-        exists = pdata.get("score",0) > 0
+        exists = pdata.get("score",0) >= 5  # meaningful presence needs 5+/10
         l3a.append(gate(f"{pname} presence", exists, f"Score: {pdata.get('score')}/10" if exists else "Not found on this platform"))
-    for pname in ["LinkedIn","G2","Capterra","YouTube","Podcasts","Publications"]:
-        pdata = plats.get(pname,{})
-        s = pdata.get("score",0)
-        l3b.append(bar(f"{pname} quality", s, 7, "/10"))
+    # L3 B: Quality Levels — merged where platforms serve same purpose
+    g2_score = plats.get("G2",{}).get("score",0)
+    cap_score = plats.get("Capterra",{}).get("score",0)
+    l3b = [
+        bar("G2/Capterra review volume & rating", max(g2_score, cap_score), 7, "/10", False, 10, "Presence + reviews on the two major B2B software review platforms. 100% of ChatGPT-cited tools have G2, 99% have Capterra."),
+        bar("LinkedIn posting activity", plats.get("LinkedIn",{}).get("score",0), 7, "/10", False, 10, "Company page completeness + posting frequency. 2-3 posts/week target."),
+        bar("YouTube presence quality", plats.get("YouTube",{}).get("score",0), 7, "/10", False, 10, "Channel + videos + transcript quality. #1 AI visibility signal."),
+        bar("Reddit participation quality", plats.get("Reddit",{}).get("score",0), 5, "/10", False, 10, "Mentions in relevant subreddits. 46.7% of Perplexity citations from Reddit."),
+    ]
 
     l3_actions = _build_actions("L3", all_f)
 
