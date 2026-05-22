@@ -246,17 +246,12 @@ def render_full_html(ctx: dict, output_path: str):
     l3a, l3b = [], []
     for pname in ["LinkedIn","G2","Capterra","YouTube","Reddit","Wikipedia"]:
         pdata = plats.get(pname,{})
-        exists = pdata.get("score",0) >= 5  # meaningful presence needs 5+/10
+        exists = pdata.get("score",0) > 0
         l3a.append(gate(f"{pname} presence", exists, f"Score: {pdata.get('score')}/10" if exists else "Not found on this platform"))
-    # L3 B: Quality Levels — merged where platforms serve same purpose
-    g2_score = plats.get("G2",{}).get("score",0)
-    cap_score = plats.get("Capterra",{}).get("score",0)
-    l3b = [
-        bar("G2/Capterra review volume & rating", max(g2_score, cap_score), 7, "/10", False, 10, "Presence + reviews on the two major B2B software review platforms. 100% of ChatGPT-cited tools have G2, 99% have Capterra."),
-        bar("LinkedIn posting activity", plats.get("LinkedIn",{}).get("score",0), 7, "/10", False, 10, "Company page completeness + posting frequency. 2-3 posts/week target."),
-        bar("YouTube presence quality", plats.get("YouTube",{}).get("score",0), 7, "/10", False, 10, "Channel + videos + transcript quality. #1 AI visibility signal."),
-        bar("Reddit participation quality", plats.get("Reddit",{}).get("score",0), 5, "/10", False, 10, "Mentions in relevant subreddits. 46.7% of Perplexity citations from Reddit."),
-    ]
+    for pname in ["LinkedIn","G2","Capterra","YouTube","Podcasts","Publications"]:
+        pdata = plats.get(pname,{})
+        s = pdata.get("score",0)
+        l3b.append(bar(f"{pname} quality", s, 7, "/10"))
 
     l3_actions = _build_actions("L3", all_f)
 
@@ -300,7 +295,7 @@ def render_full_html(ctx: dict, output_path: str):
         return f"""<div style="margin-top:20px"><h4 style="font-size:.85rem;color:#1e293b;margin-bottom:8px">📋 {label}</h4>
 <table><tr><th style="width:30px">#</th><th>Action</th><th style="width:60px">Effort</th><th>Impact</th></tr>{rows}</table></div>"""
 
-    def layer_html(num, label, score_data, improve, a_rows, b_rows, c_items, acts):
+    def layer_html(num, label, score_data, improve, a_rows, b_rows, m_rows, c_items, acts):
         color,grade,pct = sc(score_data)
         bar_w = pct
         bar_c = color
@@ -308,7 +303,8 @@ def render_full_html(ctx: dict, output_path: str):
 <div class="coll cld">
 <div style="font-size:.85rem;color:#475569;margin-bottom:16px">→ If this score improved: {improve}</div>
 <div style="margin-bottom:20px"><h4 style="font-size:.8rem;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">🟢 A — Binary Gates</h4><table>{"".join(a_rows)}</table></div>
-<div style="margin-bottom:20px"><h4 style="font-size:.8rem;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">🔵 B — Scalar Metrics</h4><table>{"".join(b_rows)}</table></div>
+<div style="margin-bottom:20px"><h4 style="font-size:.8rem;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">🔵 B — Quality Levels (improve directly)</h4><table>{"".join(b_rows)}</table></div>
+<div style="margin-bottom:20px"><h4 style="font-size:.8rem;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">📊 Metrics (outcomes of fixing A+B)</h4><table>{"".join(m_rows)}</table></div>
 <div style="margin-bottom:20px"><h4 style="font-size:.8rem;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">⚪ C — Uncontrollable</h4><div style="font-size:.8rem;color:#475569;padding:8px 12px;background:#f8fafc;border-radius:6px">{c_items}</div></div>
 {actions_html("Priority Actions", acts)}
 </div></div>"""
@@ -316,20 +312,20 @@ def render_full_html(ctx: dict, output_path: str):
     # ── Assemble ──
     l1_html = layer_html(1, "Technical Foundation", l1.get("score",0),
         "Google ranking would rise, ad CPC would drop ~30%, and AI could parse your content structure.",
-        l1a, l1b,
+        l1a, l1b, l1b,
         "Google algorithm updates can change Core Web Vitals weighting. CDN/WAF may silently block AI crawlers regardless of robots.txt settings.",
         l1_actions)
 
     l2_html = layer_html(2, "Content Citability", l2.get("score",0),
         "AI would cite your content more often, organic search traffic would increase, and visitors reading your content would be more likely to book a demo.",
-        l2a, l2b,
+        l2a, l2b, l2b,
         "AI model content weighting changes over time. Competitors improving their content quality raises the bar for everyone.",
         l2_actions)
     l2_html += f"""<div class="sec" style="margin-top:8px"><h4 style="font-size:.85rem;margin-bottom:8px">Per-page Scores</h4><table><tr><th>Page</th><th>Score</th><th>Citability</th><th>Flesch</th></tr>{page_rows}</table></div>"""
 
     l3_html = layer_html(3, "External Presence", l3.get("score",0),
         "AI would trust Muir as a real company — the corroboration threshold. Outbound emails would get higher reply rates. Buyers Googling you would find social proof that seals the deal.",
-        l3a, l3b,
+        l3a, l3b, l3b,
         "Wikipedia page creation (must be done by independent editor when notability is established). Organic YouTube/Reddit mentions by third parties. Industry publication coverage.",
         l3_actions)
     l3_html += f"""<div class="sec" style="margin-top:8px"><h4 style="font-size:.85rem;margin-bottom:8px">Platform Detail</h4><table><tr><th>Platform</th><th>Score</th><th>Evidence</th><th>What's at Stake</th><th>How to Fix</th></tr>{plat_rows}</table></div>"""
